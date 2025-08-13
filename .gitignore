@@ -1,0 +1,9 @@
+/data/
+nilearn_cache/
+.venv/
+.vscode/
+nilearn_cache/
+*.DS_Store
+*.pyc
+src/*/*/temp
+__pychache__

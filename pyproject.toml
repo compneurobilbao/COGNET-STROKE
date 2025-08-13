@@ -1,0 +1,135 @@
+[project]
+name = "CogNet-stroke"
+version = "1.0.0"
+description = "Meta-analytic brain functional decoding tool designed to predict cognitive deficits after stroke"
+authors = [ 
+    { name = "Antonio Jimenez-Marin", email = "antoniojm.compneuro@gmail.com" },
+    { name = "Silke Boulanger", email = "silke.boulanger@ugent.be" }, 
+    ]
+requires-python = "==3.12.3"
+dependencies = [
+    "appnope==0.1.4",
+    "asttokens==2.4.1",
+    "biopython==1.84",
+    "bleach==6.1.0",
+    "blinker==1.9.0",
+    "bokeh==3.6.0",
+    "brainsmash==0.11.0",
+    "brainspace==0.1.10",
+    "certifi==2024.8.30",
+    "charset-normalizer==3.3.2",
+    "click==8.1.7",
+    "comm==0.2.2",
+    "community==1.0.0b1",
+    "contourpy==1.3.0",
+    "cycler==0.12.1",
+    "debugpy==1.8.6",
+    "decorator==5.1.1",
+    "executing==2.1.0",
+    "flask==3.1.0",
+    "fonttools==4.54.1",
+    "fuzzywuzzy==0.18.0",
+    "idna==3.10",
+    "iniconfig==2.0.0",
+    "ipython==8.27.0",
+    "itsdangerous==2.2.0",
+    "jedi==0.19.1",
+    "jinja2==3.1.4",
+    "joblib==1.4.2",
+    "jupyter-client==8.6.3",
+    "jupyter-core==5.7.2",
+    "kiwisolver==1.4.7",
+    "linkify-it-py==2.0.3",
+    "llvmlite==0.43.0",
+    "lxml==5.3.0",
+    "markdown==3.7",
+    "markdown-it-py==3.0.0",
+    "markupsafe==2.1.5",
+    "matplotlib==3.9.2",
+    "matplotlib-inline==0.1.7",
+    "mdit-py-plugins==0.4.2",
+    "mdurl==0.1.2",
+    "mpmath==1.3.0",
+    "nest-asyncio==1.6.0",
+    "networkx==3.4.2",
+    "neuromaps @ git+https://github.com/netneurolab/neuromaps.git",
+    "neuroquery==1.0.4",
+    "neurosynth==0.3.8",
+    "nibabel==5.2.1",
+    "nilearn==0.10.4",
+    "nimare==0.4.0",
+    "numba==0.60.0",
+    "numpy==1.26.4",
+    "packaging==24.1",
+    "pandas==2.2.3",
+    "panel==1.5.2",
+    "param==2.1.1",
+    "parso==0.8.4",
+    "patsy==0.5.6",
+    "pexpect==4.9.0",
+    "pillow==10.4.0",
+    "platformdirs==4.3.6",
+    "plotly==5.24.1",
+    "pluggy==1.5.0",
+    "ply==3.11",
+    "prompt-toolkit==3.0.48",
+    "psutil==6.0.0",
+    "ptyprocess==0.7.0",
+    "pure-eval==0.2.3",
+    "pygments==2.18.0",
+    "pymare==0.0.8",
+    "pyparsing==3.1.4",
+    "pytest==8.3.3",
+    "python-dateutil==2.9.0.post0",
+    "pytz==2024.2",
+    "pyviz-comms==3.0.3",
+    "pyyaml==6.0.2",
+    "pyzmq==26.2.0",
+    "regex==2024.9.11",
+    "requests==2.32.3",
+    "ridgeplot==0.1.26",
+    "scikit-learn==1.5.2",
+    "scikit-network==0.33.1",
+    "scipy==1.12.0",
+    "seaborn==0.13.2",
+    "six==1.16.0",
+    "sparse==0.15.4",
+    "stack-data==0.6.3",
+    "statsmodels==0.14.3",
+    "sympy==1.13.3",
+    "tenacity==9.0.0",
+    "threadpoolctl==3.5.0",
+    "tornado==6.4.1",
+    "traitlets==5.14.3",
+    "typing-extensions==4.12.2",
+    "tzdata==2024.2",
+    "uc-micro-py==1.0.3",
+    "urllib3==2.2.3",
+    "vtk==9.3.1",
+    "wcwidth==0.2.13",
+    "webencodings==0.5.1",
+    "werkzeug==3.1.3",
+    "wrapt==1.16.0",
+    "pyproject-toml>=0.0.12",
+    "ipykernel==6.29.5",
+    "tqdm==4.66.5",
+    "ruff==0.11.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[project.scripts]
+generate_concept_maps = "src.generate_concept_maps.concept_maps_workflow:main"
+generate_cdr_report = "src.generate_cdr_report.cdr_report_workflow:main"
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"

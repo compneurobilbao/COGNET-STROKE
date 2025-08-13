@@ -1,0 +1,21 @@
+{
+    "LDA50_abstract_weight__40_face_faces_facial": "facial_perception", 
+    "LDA50_abstract_weight__47_attention_attentional_target": "attention", 
+    "LDA50_abstract_weight__9_memory_working_wm": "working_memory", 
+    "LDA50_abstract_weight__41_imagery_mental_events": "imagery", 
+    "LDA50_abstract_weight__37_language_reading_word": "language", 
+    "LDA50_abstract_weight__45_motion_perception_visual": "motion_perception", 
+    "LDA50_abstract_weight__18_number_ips_numerical": "numerical_cognition", 
+    "LDA50_abstract_weight__16_response_inhibition_control": "inhibition", 
+    "LDA50_abstract_weight__17_motor_cortex_hand": "motor", 
+    "LDA50_abstract_weight__7_reward_feedback_striatum": "reward_processing", 
+    "LDA50_abstract_weight__42_visual_cortex_sensory": "visual_perception", 
+    "LDA50_abstract_weight__44_eye_sleep_gaze": "eye_movements", 
+    "LDA50_abstract_weight__19_action_actions_observation": "action", 
+    "LDA50_abstract_weight__32_pain_somatosensory_stimulation": "pain", 
+    "LDA50_abstract_weight__33_memory_retrieval_encoding": "memory", 
+    "LDA50_abstract_weight__26_emotional_amygdala_negative": "emotion", 
+    "LDA50_abstract_weight__20_control_conflict_task": "cognitive_control", 
+    "LDA50_abstract_weight__28_social_empathy_moral": "social_cognition", 
+    "LDA50_abstract_weight__30_decision_making_risk": "decision_making"
+}
