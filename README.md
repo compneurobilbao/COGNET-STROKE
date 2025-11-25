@@ -1,4 +1,4 @@
-# CogNet-Stroke
+# COGNET-STROKE
 
 Is a meta-analytic brain functional decoding tool designed to predict cognitive deficits after stroke. The tool integrates Lesion-Network Mapping (LNM) with meta-analytic concept maps derived from [Neurosynth](https://neurosynth.org/), enabling the identification of the cognitive domains most affected by stroke-induced network disruptions. CogNet-Stroke offers a framework for individualized cognitive-deficit profiling, with implications for personalized rehabilitation strategies in stroke recovery.
 
@@ -73,3 +73,5 @@ generate_cdr_report --lesion_data_dir=data/lesion --lnm_data_dir=data/functional
 3. A `.csv file` with the results per patient and concept.
 
 ## Cite
+
+Antonio Jimenez-Marin, Silke Boulanger, Iñigo Tellaetxe-Elorriaga, Iñaki Escudero, Ivan Gil De Sousa, Marimar Freijo, Pedro I Tejada, Asier Erramuzpe, Jesus M. Cortes. COGNET-STROKE: A NOVEL BRAIN DYSCONNECTIVITY TOOL FOR PREDICTION OF COGNITIVE DEFICITS AFTER STROKE. MedRxiv. 2025. [https://doi.org/10.1101/2023.08.04.551953](https://doi.org/10.1101/2025.08.13.25333589)
