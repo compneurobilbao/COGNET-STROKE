@@ -61,6 +61,10 @@ Then, generate the report:
 generate_cdr_report --lesion_data_dir=data/lesion --lnm_data_dir=data/functional_dysconnectivity --concept_data_dir=data/results/concept_maps --out_dir=data/results 
 ```
 
+## Container step and slim runtime
+
+`runtime/` is a slim package (`cognet-runtime`: numpy, nibabel, nilearn, pandas) with the CDR computation, the profile and the figure; `step/` wraps it as a container step (JSON profile plus figure, precomputed concept maps and nulls supplied as a bundle). The environment described above is the analysis environment and is not part of the image. See [step/README.md](step/README.md).
+
 ## Outputs
 
 1. Table reporting concepts significantly altered given the patient's lesion. Here is an example: 

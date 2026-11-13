@@ -114,7 +114,12 @@ dependencies = [
     "ipykernel==6.29.5",
     "tqdm==4.66.5",
     "ruff==0.11.0",
+    # slim runtime (CDR, parcellation, profile, figure); also what the container step installs
+    "cognet-runtime",
 ]
+
+[tool.uv.sources]
+cognet-runtime = { path = "runtime", editable = true }
 
 [build-system]
 requires = ["hatchling"]

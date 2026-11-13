@@ -1,0 +1,188 @@
+name: Step
+
+# Contract step wrapper (card F0-26): unit tests of the slim runtime and of the wrapper, image
+# build with a size gate, reference test under Docker and Apptainer with the synthetic concept-maps
+# bundle, outputs validated with the contract validator and the profile schema. The SDK and the
+# contract files come from the public stroke-server repository at the commit pinned in
+# step/ci/STROKE_SERVER_SHA. Nothing real is used: the reference dataset is generated from a
+# fixed seed by step/tests/make_reference.py.
+
+on:
+  pull_request:
+    paths: ["step/**", "runtime/**", "src/cdr.py", ".github/workflows/step.yml"]
+  push:
+    branches: [main]
+    paths: ["step/**", "runtime/**", "src/cdr.py", ".github/workflows/step.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: step-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE: cognet-stroke-step:ci
+  MAX_IMAGE_BYTES: "1500000000"
+  APPTAINER_VERSION: "1.5.5"
+  APPTAINER_DEB_SHA256: "25095d3711504b3e8657dbb2e172ef8db9db43c4503d940c9c36b105db8dce77"
+
+jobs:
+  unit:
+    name: Runtime and wrapper unit tests, manifest validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/setup-python@v5.3.0
+        with:
+          python-version: "3.12"
+      - name: Fetch pinned contract files and SDK
+        run: step/ci/fetch_pinned.sh "$RUNNER_TEMP/pinned"
+      - name: Install (the image's pinned requirements, the runtime, the SDK)
+        run: |
+          pip install -r step/requirements-image.txt pytest==8.3.3
+          pip install --no-deps ./runtime
+          pip install --no-deps "$RUNNER_TEMP/pinned/steps/sdk"
+      - name: Manifest is valid
+        run: python "$RUNNER_TEMP/pinned/contracts/validate.py" --kind step step/step.yaml
+      - name: Runtime tests (compute_cdr and edge cases, parcellation, bundle, profile, figure)
+        env:
+          MPLBACKEND: Agg
+        run: python -m pytest runtime/tests -q -p no:cacheprovider
+      - name: Wrapper tests (synthetic reference dataset generated in a temporary directory)
+        env:
+          MPLBACKEND: Agg
+          STEP_CONTRACTS_DIR: ${{ runner.temp }}/pinned/contracts
+        run: python -m pytest step/tests -q -p no:cacheprovider
+
+  container:
+    name: Reference test under Docker and Apptainer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/setup-python@v5.3.0
+        with:
+          python-version: "3.12"
+      - name: Fetch pinned contract files and SDK
+        run: step/ci/fetch_pinned.sh "$RUNNER_TEMP/pinned"
+      - name: Install SDK on the host (reference-test runner, validator, dataset generator)
+        run: |
+          pip install numpy==1.26.4 nibabel==5.2.1 PyYAML==6.0.2 jsonschema==4.23.0
+          pip install --no-deps "$RUNNER_TEMP/pinned/steps/sdk"
+          echo "STEP_CONTRACTS_DIR=$RUNNER_TEMP/pinned/contracts" >> "$GITHUB_ENV"
+      - name: Generate the synthetic reference dataset and bundle
+        run: |
+          python step/tests/make_reference.py step/tests/reference "$RUNNER_TEMP/pinned/contracts"
+          du -sh step/tests/reference
+
+      - name: Build the step image
+        run: docker build -f step/Dockerfile --build-arg STROKE_SERVER_SHA="$(cat step/ci/STROKE_SERVER_SHA)" -t "$IMAGE" .
+
+      - name: Image size is below 1.5 GB
+        run: |
+          size="$(docker image inspect "$IMAGE" --format '{{.Size}}')"
+          echo "image size: $size bytes"
+          echo "Image size: $((size / 1000000)) MB (limit $((MAX_IMAGE_BYTES / 1000000)) MB)" >> "$GITHUB_STEP_SUMMARY"
+          test "$size" -lt "$MAX_IMAGE_BYTES"
+
+      - name: Image checks (mount points, permissions, slim dependency set, manifest)
+        run: |
+          docker run --rm --entrypoint /bin/sh "$IMAGE" -c '
+            set -eu
+            test -x /usr/local/bin/run
+            test -r /opt/step/step.yaml
+            for d in /in /out /ref /tmp; do test -d "$d"; test -z "$(ls -A "$d")"; done
+            test -z "$(find /opt/step /usr/local/bin/run -not -perm -o=r)"
+          '
+          docker run --rm --entrypoint cat "$IMAGE" /opt/step/step.yaml | cmp - step/step.yaml
+          # the analysis environment must not leak into the runtime image
+          docker run --rm --entrypoint python "$IMAGE" -c '
+          import importlib.util, sys
+          bad = [m for m in ("neuromaps", "brainsmash", "nimare", "statsmodels", "seaborn", "neurosynth", "torch") if importlib.util.find_spec(m)]
+          sys.exit("analysis packages in the runtime image: %s" % bad if bad else 0)
+          '
+
+      - name: Reference test (contract section 6 flags), bundle mounted at /ref/concept_maps
+        run: |
+          mkdir -p artifacts
+          stroke-step-reftest --step-dir step --mode docker --image "$IMAGE" \
+            --bundle concept_maps=step/tests/reference/bundle \
+            --workdir "$RUNNER_TEMP/docker-run" --save-provenance artifacts/provenance-docker.json
+          cp "$RUNNER_TEMP/docker-run/out/profile.json" artifacts/profile-docker.json
+          cp "$RUNNER_TEMP/docker-run/out/profile_figure.png" artifacts/profile_figure-docker.png
+
+      - name: Validate manifest, bundle and provenance with contracts/validate.py
+        run: python "$STEP_CONTRACTS_DIR/validate.py" step/step.yaml step/tests/reference/bundle/bundle.yaml artifacts/provenance-docker.json
+
+      - name: Validate the profile against the contract schema
+        run: |
+          python - <<'EOF'
+          import json, os
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          schema = json.loads((Path(os.environ["STEP_CONTRACTS_DIR"]) / "schemas/v1/cognet-profile.schema.json").read_text())
+          profile = json.loads(Path("artifacts/profile-docker.json").read_text())
+          Draft202012Validator(schema).validate(profile)
+          print("profile valid:", len(profile["concepts"]), "concepts,", len(profile["domains"]), "domains")
+          EOF
+
+      - name: An empty lesion mask is rejected with exit 10 (mask_empty)
+        run: |
+          work="$RUNNER_TEMP/empty"
+          mkdir -p "$work/in" "$work/out"
+          chmod 777 "$work/out"
+          python - "$work/in" <<'EOF'
+          import sys, nibabel as nib, numpy as np
+          img = nib.load("step/tests/reference/lesion_mask.nii.gz")
+          nib.save(nib.Nifti1Image(np.zeros(img.shape, np.uint8), img.affine), sys.argv[1] + "/lesion_mask.nii.gz")
+          EOF
+          cp step/tests/reference/fdisconnection_map.nii.gz "$work/in/"
+          echo '{"alpha": 0.05}' > "$work/in/params.json"
+          set +e
+          docker run --rm --read-only --user 12345:12345 --cap-drop ALL --security-opt no-new-privileges \
+            --network none --tmpfs /tmp:rw,mode=1777,size=256m \
+            -v "$work/in:/in:ro" -v "$work/out:/out" -v "$PWD/step/tests/reference/bundle:/ref/concept_maps:ro" \
+            -e HOME=/tmp -e TMPDIR=/tmp -e TZ=UTC -e STEP_CPUS=1 \
+            --entrypoint /usr/local/bin/run "$IMAGE" --in /in --out /out --params /in/params.json
+          code=$?
+          set -e
+          echo "exit code: $code"
+          cat "$work/out/error.json"
+          test "$code" -eq 10
+          grep -q '"code": *"mask_empty"' "$work/out/error.json"
+          python "$STEP_CONTRACTS_DIR/validate.py" step/step.yaml "$work/out/provenance.json" "$work/out/error.json"
+
+      - name: Install Apptainer (official release package)
+        run: |
+          deb="apptainer_${APPTAINER_VERSION}_amd64.deb"
+          curl -sSfL -o "$RUNNER_TEMP/$deb" "https://github.com/apptainer/apptainer/releases/download/v${APPTAINER_VERSION}/${deb}"
+          echo "${APPTAINER_DEB_SHA256}  $RUNNER_TEMP/$deb" | sha256sum -c -
+          sudo apt-get update -q
+          sudo apt-get install -y -q "$RUNNER_TEMP/$deb"
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          apptainer --version
+
+      - name: Build the SIF from the Docker image
+        run: |
+          sudo apptainer build --build-arg IMAGE="$IMAGE" "$RUNNER_TEMP/step.sif" step/Apptainer.def
+          sudo chown "$(id -u):$(id -g)" "$RUNNER_TEMP/step.sif"
+
+      - name: Reference test under Apptainer (--containall --cleanenv --no-home)
+        run: |
+          stroke-step-reftest --step-dir step --mode apptainer --sif "$RUNNER_TEMP/step.sif" \
+            --bundle concept_maps=step/tests/reference/bundle \
+            --workdir "$RUNNER_TEMP/apptainer-run" --save-provenance artifacts/provenance-apptainer.json
+          python "$STEP_CONTRACTS_DIR/validate.py" step/step.yaml step/tests/reference/bundle/bundle.yaml artifacts/provenance-apptainer.json
+          cmp "$RUNNER_TEMP/docker-run/out/profile.json" "$RUNNER_TEMP/apptainer-run/out/profile.json" \
+            && echo "profiles identical between Docker and Apptainer" \
+            || echo "NOTE: profiles differ between Docker and Apptainer"
+
+      - uses: actions/upload-artifact@v4.6.0
+        if: always()
+        with:
+          name: step-artifacts
+          path: artifacts/
+          if-no-files-found: warn
