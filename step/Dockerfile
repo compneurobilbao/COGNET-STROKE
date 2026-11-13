@@ -46,7 +46,7 @@ RUN mkdir -p /in /out /ref /tmp \
     && chmod -R a+rX /opt/step \
     && PYTHONDONTWRITEBYTECODE= python -m compileall -q /opt/step/src /opt/step/contracts \
     && chmod -R a+rX /opt/step /usr/local/lib/python3.12/site-packages \
-    && MPLBACKEND=Agg python -c "import cognet_runtime, cognet_step, stroke_step_sdk, nilearn.plotting"
+    && MPLBACKEND=Agg MPLCONFIGDIR=/dev/shm/mpl python -c "import cognet_runtime, cognet_step, stroke_step_sdk, nilearn.plotting"     && rm -rf /dev/shm/mpl /tmp/* /root/.cache
 
 USER 10001:10001
 WORKDIR /tmp
