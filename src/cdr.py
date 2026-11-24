@@ -29,8 +29,8 @@ def compute_cdr(concept_mask, disconection_map, nulls=None):
     inside_concept_mask = concept_mask == 1
     outside_concept_mask = concept_mask == -1
     
-    inside_concept_dismap_mean = np.mean(disconection_map[inside_concept_mask])
-    outside_concept_dismap_mean = np.mean(disconection_map[outside_concept_mask])
+    inside_concept_dismap_mean = np.nanmean(disconection_map[inside_concept_mask])
+    outside_concept_dismap_mean = np.nanmean(disconection_map[outside_concept_mask])
     if outside_concept_dismap_mean == 0:
         representation_value = inside_concept_dismap_mean
     else:
@@ -47,8 +47,8 @@ def compute_cdr(concept_mask, disconection_map, nulls=None):
             inside_concept_mask_null = null == 1
             outside_concept_mask_null = null == -1
 
-            inside_concept_dismap_mean_null = np.mean(disconection_map[inside_concept_mask_null])
-            outside_concept_dismap_mean_null = np.mean(disconection_map[outside_concept_mask_null])
+            inside_concept_dismap_mean_null = np.nanmean(disconection_map[inside_concept_mask_null])
+            outside_concept_dismap_mean_null = np.nanmean(disconection_map[outside_concept_mask_null])
             if outside_concept_dismap_mean_null == 0:
                 representation_value_nulls.append(inside_concept_dismap_mean_null)
             else:
